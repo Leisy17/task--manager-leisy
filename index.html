@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="cards.css">
+</head>
+<body id="table-body" style="background: #F0F4F7;">
+    <div id="task-container">
+        <div class="title">
+            <h1>Hoy tienes <span id="number">0 tareas pendientes</span> por resolver</h1>
+        </div>
+        <div class="line"></div>
+        <div class="add-pending-task">
+            <button class="btn-terciary" id="add-pending" onclick="abrirModal('add-tasks')">+ Agregar Tarea</button>
+            <button class="btn-quaternary" disabled id="delete-done-tasks" onclick="abrirModal('modal-done-tasks')">Eliminar resueltas</button>
+        </div>
+        <div class="line"></div>
+        <div class="modal-container" id="add-tasks">
+            <div class="modal">
+                <div id="input-info">
+                    <input id="tareaInput" placeholder="Título">
+                    <textarea id="descInput" placeholder="Descripción" rows="5" cols="2"></textarea>
+                </div>
+                <div id="btn-modal">
+                    <button class="btn-primary" onclick="addNewTask()">Guardar</button>
+                    <button class="btn-secondary" onclick="cerrarModal('add-tasks')">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-container" id="modal-done-tasks">
+            <div class="modal">
+                <div class="title" style="margin: 10px 0px;">
+                    <p>¿Estás seguro de eliminar <span id="number-done">0 tareas</span>?</p>
+                </div>
+                <div id="btn-modal">
+                    <button class="btn-primary" onclick="deleteDone()">Confirmar</button>
+                    <button class="btn-secondary" onclick="cerrarModal('modal-done-tasks')">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="task-categories">
+
+            <table id="tabla-cabecera">
+                <thead>
+                    <th class="th-pending">Tareas pendientes</th>
+
+                    <th class="th-progress">Tareas en curso</th>
+
+                    <th class="th-done">Tareas resueltas</th>
+                </thead>
+                <tbody id="tbody-pending">
+                </tbody>
+            </table>
+
+        </div>
+
+        <script src="app.js"></script>
+    </div>
+</body>
+</html>
