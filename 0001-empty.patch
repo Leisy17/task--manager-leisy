@@ -1,0 +1,897 @@
+From bfdfa1de6eb040e5f696f16184caf7f66e5cf15d Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Leisy=20S=C3=A1nchez?= <leisysado@gmail.com>
+Date: Fri, 3 Apr 2026 16:59:14 -0500
+Subject: [PATCH] empty
+
+---
+ README.md               |   1 +
+ app.js                  | 179 +++++++++++++++++++++++++++++++++++++++
+ cards.css               | 112 ++++++++++++++++++++++++
+ cards/cards.css         | 112 ++++++++++++++++++++++++
+ cards/doneCard.html     |  25 ++++++
+ cards/pendingCard.html  |  25 ++++++
+ cards/progressCard.html |  25 ++++++
+ index.html              |  65 ++++++++++++++
+ styles.css              | 183 ++++++++++++++++++++++++++++++++++++++++
+ tablero.html            |  70 +++++++++++++++
+ 10 files changed, 797 insertions(+)
+ create mode 100644 README.md
+ create mode 100644 app.js
+ create mode 100644 cards.css
+ create mode 100644 cards/cards.css
+ create mode 100644 cards/doneCard.html
+ create mode 100644 cards/pendingCard.html
+ create mode 100644 cards/progressCard.html
+ create mode 100644 index.html
+ create mode 100644 styles.css
+ create mode 100644 tablero.html
+
+diff --git a/README.md b/README.md
+new file mode 100644
+index 0000000..1644363
+--- /dev/null
++++ b/README.md
+@@ -0,0 +1 @@
++# task--manager-leisy
+diff --git a/app.js b/app.js
+new file mode 100644
+index 0000000..b810dd6
+--- /dev/null
++++ b/app.js
+@@ -0,0 +1,179 @@
++const tbodyPending = document.getElementById("tbody-pending");
++const pendingNumber = document.getElementById("number");
++const doneNumber = document.getElementById("number-done");
++var tableLen = 0;
++var number = 0;
++var finishedNumber = 0;
++
++function abrirModal(id) {
++    document.getElementById(id).style.display = "flex";
++}
++
++function cerrarModal(id) {
++    document.querySelector(`#${id}`).style.display = "none";
++}
++
++function createCard(titulo, descripcion, line, footer) {
++    const template = document.createElement("template");
++
++    template.innerHTML = `
++        <div class="card-container" style="display: flex; justify-content: center; width: 100;">
++            <div class="card mb-16" id=>
++                ${line}
++                <div class="card-header">
++                    <h1>${titulo}</h1>
++                </div>
++                <div class="card-body">
++                    <p>${descripcion}</p>
++                </div>
++                <div class="card-footer">
++                    ${footer}
++                </div>
++            </div>
++        </div>
++    `;
++
++    return template.content.firstElementChild;
++}
++
++function actualizarPendientes(cambio) {
++    number += cambio;
++    if (number < 0) number = 0;
++
++    const texto = number !== 1
++        ? `${number} tareas pendientes`
++        : `${number} tarea pendiente`;
++
++    pendingNumber.innerHTML = texto;
++}
++
++function actualizarTareasHechas(cambio) {
++    finishedNumber += cambio;
++
++    if (finishedNumber < 0) finishedNumber = 0;
++
++    const texto = finishedNumber !== 1
++        ? `${finishedNumber} tareas`
++        : `${finishedNumber} tarea`;
++
++    doneNumber.innerHTML = texto;
++
++    document.getElementById("delete-done-tasks").disabled = finishedNumber === 0;
++}
++
++function addNewTask() {
++    const tarea = document.getElementById("tareaInput").value.trim();
++    const descripcion = document.getElementById("descInput").value.trim();
++    if (!tarea || !descripcion) return;
++
++    const card = createCard(
++        tarea, 
++        descripcion,
++        `<div class="line pending"></div>`,
++        `<button class="btn-task primary" data-action="next-progress">Avanzar</button>`
++            );
++
++    const tr = document.createElement("tr");
++    const tdPending = document.createElement("td");
++    const tdProgress = document.createElement("td");
++    const tdDone = document.createElement("td");
++
++    tr.dataset.rowId = tableLen;
++
++    tdPending.appendChild(card);
++
++    tr.appendChild(tdPending);
++    tr.appendChild(tdProgress);
++    tr.appendChild(tdDone);
++
++    tbodyPending.appendChild(tr);
++    
++    tableLen += 1;
++    actualizarPendientes(1);
++    cerrarModal('add-tasks');
++    document.getElementById("tareaInput").value = "";
++    document.getElementById("descInput").value = "";
++}
++
++const tbody = document.getElementById('table-body');
++
++tbody.addEventListener('click', function (event) {
++  const button = event.target.closest('button[data-action]');
++
++  if (!button) return;
++
++  const tr = button.closest('tr');
++  const card = button.closest('.card-container');
++  if (!tr || !card) return;
++
++  const action = button.dataset.action;
++
++  if (action === 'next-progress') {
++    nextProgress(tr, card);
++  }
++
++  if (action === 'return-pending') {
++    returnPending(tr, card);
++  }
++
++  if (action === 'finish') {
++    finish(tr, card);
++  }
++});
++
++function returnPending(tr, card) {
++    const actualCol = tr.children[1];
++    const nextCol = tr.children[0];
++    if (!actualCol || !nextCol) return;
++    const line = card.querySelector(".line");
++    line.classList.remove("progress");
++    line.classList.add("pending");
++    const footer = card.querySelector(".card-footer");
++    footer.innerHTML = `
++        <button class="btn-task primary" data-action="next-progress">Avanzar</button>`;
++    nextCol.appendChild(card);
++    actualizarPendientes(1);
++}
++
++function nextProgress(tr, card) {
++    const actualCol = tr.children[0];
++    const nextCol = tr.children[1];
++    if (!actualCol || !nextCol) return;
++    const line = card.querySelector(".line");
++    line.classList.remove("pending");
++    line.classList.add("progress");
++    const footer = card.querySelector(".card-footer");
++    footer.innerHTML = `
++        <button class="btn-task return" data-action="return-pending">Regresar</button>
++        <button class="btn-task success" data-action="finish">Finalizar</button>`;
++    nextCol.appendChild(card);
++    actualizarPendientes(-1);
++}
++
++function finish(tr, card) {
++    const actualCol = tr.children[1];
++    const nextCol = tr.children[2];
++    if (!actualCol || !nextCol) return;
++    const line = card.querySelector(".line");
++    line.classList.remove("progress");
++    line.classList.add("done");
++    const footer = card.querySelector(".card-footer");
++    footer.innerHTML = "";
++    nextCol.appendChild(card);
++    actualizarTareasHechas(1);
++}
++
++function deleteDone() {
++    var filas = tbodyPending.querySelectorAll("tr");
++
++    for (var i = 0; i < filas.length; i++) {
++        var tr = filas[i];
++        var tdDone = tr.children[2];
++        if (tdDone && tdDone.children.length > 0) {
++            tdDone.innerHTML = "";
++            actualizarTareasHechas(-1);
++        }
++    }
++
++    cerrarModal("modal-done-tasks");
++}
+\ No newline at end of file
+diff --git a/cards.css b/cards.css
+new file mode 100644
+index 0000000..388d2a7
+--- /dev/null
++++ b/cards.css
+@@ -0,0 +1,112 @@
++body,
++p,
++h1 {
++    margin: 0;
++    padding: 0;
++}
++
++.container {
++    width: 100%;
++    box-sizing: border-box;
++    margin: 0;
++    padding: 0;
++    font-family: 'Roboto', sans-serif;
++    background: #F0F4F7;
++    min-height: 100vh;
++    padding: 24px;
++}
++
++.card {
++    position: relative;
++    display: flex;
++    flex-direction: column;
++    justify-content: center;
++    align-items: center;
++    gap: 8px;
++    padding: 20px;
++    width: 282px;
++    border-radius: 16px;
++    background: #FFF;
++    box-shadow: 0 4px 24px 0 rgba(44, 52, 55, 0.04);
++}
++
++.card .line {
++    position: absolute;
++    left: 0;
++    width: 4px;
++    height: calc(100% - 48px);
++    border-radius: 12px;
++}
++
++.card .line.pending {
++    background: #747C80;
++}
++
++.card .line.progress {
++    background: #F8A010;
++}
++
++.card .line.done {
++    background: #006D4A;
++}
++
++.card .card-header h1 {
++    color: #2C3437;
++    font-size: 16px;
++    font-style: normal;
++    font-weight: 600;
++    line-height: 24px;
++}
++
++.card .card-body p {
++    color: #596064;
++    font-size: 14px;
++    font-style: normal;
++    font-weight: 400;
++    line-height: 20px;
++    text-align: left;
++}
++.card .card-body {
++    width: 100%;
++}
++
++.card .card-footer {
++    display: flex;
++    justify-content: flex-end;
++    align-items: center;
++    width: 100%;
++}
++
++.btn-task {
++    text-align: center;
++    font-size: 12px;
++    font-style: normal;
++    font-weight: 700;
++    line-height: 16px;
++    width: auto;
++    padding: 8px;
++    background: transparent;
++    border: 0;
++    cursor: pointer;
++}
++
++.btn-task.primary {
++    color: #0053DC;
++}
++
++.btn-task.primary:hover {
++    text-decoration: underline;
++}
++
++.btn-task.success {
++    color: #006D4A;
++}
++
++.btn-task.return {
++    color: #596064;
++}
++
++
++.mb-16 {
++    margin-bottom: 16px;
++}
+\ No newline at end of file
+diff --git a/cards/cards.css b/cards/cards.css
+new file mode 100644
+index 0000000..388d2a7
+--- /dev/null
++++ b/cards/cards.css
+@@ -0,0 +1,112 @@
++body,
++p,
++h1 {
++    margin: 0;
++    padding: 0;
++}
++
++.container {
++    width: 100%;
++    box-sizing: border-box;
++    margin: 0;
++    padding: 0;
++    font-family: 'Roboto', sans-serif;
++    background: #F0F4F7;
++    min-height: 100vh;
++    padding: 24px;
++}
++
++.card {
++    position: relative;
++    display: flex;
++    flex-direction: column;
++    justify-content: center;
++    align-items: center;
++    gap: 8px;
++    padding: 20px;
++    width: 282px;
++    border-radius: 16px;
++    background: #FFF;
++    box-shadow: 0 4px 24px 0 rgba(44, 52, 55, 0.04);
++}
++
++.card .line {
++    position: absolute;
++    left: 0;
++    width: 4px;
++    height: calc(100% - 48px);
++    border-radius: 12px;
++}
++
++.card .line.pending {
++    background: #747C80;
++}
++
++.card .line.progress {
++    background: #F8A010;
++}
++
++.card .line.done {
++    background: #006D4A;
++}
++
++.card .card-header h1 {
++    color: #2C3437;
++    font-size: 16px;
++    font-style: normal;
++    font-weight: 600;
++    line-height: 24px;
++}
++
++.card .card-body p {
++    color: #596064;
++    font-size: 14px;
++    font-style: normal;
++    font-weight: 400;
++    line-height: 20px;
++    text-align: left;
++}
++.card .card-body {
++    width: 100%;
++}
++
++.card .card-footer {
++    display: flex;
++    justify-content: flex-end;
++    align-items: center;
++    width: 100%;
++}
++
++.btn-task {
++    text-align: center;
++    font-size: 12px;
++    font-style: normal;
++    font-weight: 700;
++    line-height: 16px;
++    width: auto;
++    padding: 8px;
++    background: transparent;
++    border: 0;
++    cursor: pointer;
++}
++
++.btn-task.primary {
++    color: #0053DC;
++}
++
++.btn-task.primary:hover {
++    text-decoration: underline;
++}
++
++.btn-task.success {
++    color: #006D4A;
++}
++
++.btn-task.return {
++    color: #596064;
++}
++
++
++.mb-16 {
++    margin-bottom: 16px;
++}
+\ No newline at end of file
+diff --git a/cards/doneCard.html b/cards/doneCard.html
+new file mode 100644
+index 0000000..3ea7c5a
+--- /dev/null
++++ b/cards/doneCard.html
+@@ -0,0 +1,25 @@
++<!DOCTYPE html>
++<html lang="en">
++<head>
++    <meta charset="UTF-8">
++    <meta name="viewport" content="width=device-width, initial-scale=1.0">
++</head>
++<body>
++    <div class="card mb-16">
++
++        <div class="line done"></div>
++        <div class="card-header">
++            <h1>Maquetación de Header</h1>
++        </div>
++        <div class="card-body">
++            <p>
++                Definir estructura flexible para
++                navegación principal.                    
++            </p>
++        </div>
++        <div class="card-footer">
++            <!--<button class="btn-task success">Exitoso</button>-->
++        </div>
++    </div>
++</body>
++</html>
+\ No newline at end of file
+diff --git a/cards/pendingCard.html b/cards/pendingCard.html
+new file mode 100644
+index 0000000..4f039cc
+--- /dev/null
++++ b/cards/pendingCard.html
+@@ -0,0 +1,25 @@
++<!DOCTYPE html>
++<html lang="en">
++<head>
++    <meta charset="UTF-8">
++    <meta name="viewport" content="width=device-width, initial-scale=1.0">
++    <link rel="stylesheet" href="cards.css">
++</head>
++<body>
++    <div class="card mb-16">
++        <div class="line pending"></div>
++        <div class="card-header">
++            <h1>Maquetación de Header</h1>
++        </div>
++        <div class="card-body">
++            <p>
++                Definir estructura flexible para
++                navegación principal.                    
++            </p>
++        </div>
++        <div class="card-footer">
++            <button class="btn-task primary">Avanzar</button>
++        </div>
++    </div>
++</body>
++</html>
+\ No newline at end of file
+diff --git a/cards/progressCard.html b/cards/progressCard.html
+new file mode 100644
+index 0000000..f9d4390
+--- /dev/null
++++ b/cards/progressCard.html
+@@ -0,0 +1,25 @@
++<!DOCTYPE html>
++<html lang="en">
++<head>
++    <meta charset="UTF-8">
++    <meta name="viewport" content="width=device-width, initial-scale=1.0">
++</head>
++<body>
++    <div class="card mb-16">
++        <div class="line progress"></div>
++        <div class="card-header">
++            <h1>Maquetación de Header</h1>
++        </div>
++        <div class="card-body">
++            <p>
++                Definir estructura flexible para
++                navegación principal.                    
++            </p>
++        </div>
++        <div class="card-footer">
++            <button class="btn-task return">Regresar</button>
++            <button class="btn-task success">Finalizar</button>
++        </div>
++    </div>
++</body>
++</html>
+\ No newline at end of file
+diff --git a/index.html b/index.html
+new file mode 100644
+index 0000000..5b3d41e
+--- /dev/null
++++ b/index.html
+@@ -0,0 +1,65 @@
++<!DOCTYPE html>
++<html lang="en">
++<head>
++    <meta charset="UTF-8">
++    <meta name="viewport" content="width=device-width, initial-scale=1.0">
++    <title>Task Manager</title>
++    <link rel="stylesheet" href="styles.css">
++    <link rel="stylesheet" href="cards.css">
++</head>
++<body id="table-body" style="background: #F0F4F7;">
++    <div id="task-container">
++        <div class="title">
++            <h1>Hoy tienes <span id="number">0 tareas pendientes</span> por resolver</h1>
++        </div>
++        <div class="line"></div>
++        <div class="add-pending-task">
++            <button class="btn-terciary" id="add-pending" onclick="abrirModal('add-tasks')">+ Agregar Tarea</button>
++            <button class="btn-quaternary" disabled id="delete-done-tasks" onclick="abrirModal('modal-done-tasks')">Eliminar resueltas</button>
++        </div>
++        <div class="line"></div>
++        <div class="modal-container" id="add-tasks">
++            <div class="modal">
++                <div id="input-info">
++                    <input id="tareaInput" placeholder="Título">
++                    <textarea id="descInput" placeholder="Descripción" rows="5" cols="2"></textarea>
++                </div>
++                <div id="btn-modal">
++                    <button class="btn-primary" onclick="addNewTask()">Guardar</button>
++                    <button class="btn-secondary" onclick="cerrarModal('add-tasks')">Cancelar</button>
++                </div>
++            </div>
++        </div>
++
++        <div class="modal-container" id="modal-done-tasks">
++            <div class="modal">
++                <div class="title" style="margin: 10px 0px;">
++                    <p>¿Estás seguro de eliminar <span id="number-done">0 tareas</span>?</p>
++                </div>
++                <div id="btn-modal">
++                    <button class="btn-primary" onclick="deleteDone()">Confirmar</button>
++                    <button class="btn-secondary" onclick="cerrarModal('modal-done-tasks')">Cancelar</button>
++                </div>
++            </div>
++        </div>
++
++        <div id="task-categories">
++
++            <table id="tabla-cabecera">
++                <thead>
++                    <th class="th-pending">Tareas pendientes</th>
++
++                    <th class="th-progress">Tareas en curso</th>
++
++                    <th class="th-done">Tareas resueltas</th>
++                </thead>
++                <tbody id="tbody-pending">
++                </tbody>
++            </table>
++
++        </div>
++
++        <script src="app.js"></script>
++    </div>
++</body>
++</html>
+\ No newline at end of file
+diff --git a/styles.css b/styles.css
+new file mode 100644
+index 0000000..c6648e5
+--- /dev/null
++++ b/styles.css
+@@ -0,0 +1,183 @@
++* {
++  box-sizing: border-box;
++  margin: 0;
++  padding: 0;
++  font-family: 'Courier New', Courier, monospace;
++}
++
++body {
++  background-color: #c5c5c5;
++  display: flex;
++  justify-content: initial;
++  align-items: center;
++  min-height: 100vh;
++  flex-direction: column;
++  gap: 20px;
++  padding: 0 10px;
++}
++
++#task-container {
++    background-color: #ffffff;
++    align-items: center;
++    justify-content: center;
++    padding: 25px;
++    margin: 25px;
++    border-radius: 24px;
++    box-shadow: 0 10px 14px 0 rgba(0,0,0,0.24);
++    width: 100%;
++    max-width: 1100px;
++}
++
++
++  
++.line {
++    margin: 10px 0px;
++    content: "";
++    height: 1px;
++    background-image: linear-gradient(to right, transparent, rgb(48,49,51), transparent);
++}
++
++.title {
++    text-align: center;
++}
++
++
++#task-categories {
++    width: 100%;
++}
++
++#tabla-cabecera {
++    width: 100%;
++    text-align: center;
++}
++
++td {
++    padding: 4px;
++    justify-content: center;
++    /* display: flex; */
++}
++
++.add-pending-task {
++    text-align: center;
++    width: 100%;
++    padding: 0px 100px;
++    display: flex;
++    justify-content: space-between;
++}
++
++.btn-primary {
++    background: linear-gradient(90deg, #0053DC, #5484fd);
++}
++
++.btn-primary:hover {
++    box-shadow: 0 10px 14px 0 rgba(0,0,0,0.24);
++}
++
++.btn-secondary {
++    background: linear-gradient(90deg, #e21a1a, #f69c9c);
++}
++
++.btn-secondary:hover {
++    box-shadow: 0 10px 14px 0 rgba(0,0,0,0.24);
++}
++
++.btn-terciary {
++    background: #ffffff;
++    color: #0053DC;
++}
++
++.btn-terciary:hover {
++    text-decoration: underline;
++}
++
++.btn-quaternary {
++    background: #ffffff;
++    color: #e21a1a;
++}
++
++.btn-quaternary:hover {
++    text-decoration: underline;
++}
++
++.maxW200 {
++    max-width: 200px;
++}
++
++.w100 {
++    width: 100%;
++}
++
++.flexGrow1 {
++    flex-grow: 1;
++}
++
++.btn-quaternary:disabled {
++    color: grey;
++    cursor: not-allowed;
++}
++
++button {
++    height: 40px;
++    font-weight: 700;
++    color: white;
++    border-radius: 8px;
++    border: 0px;
++    padding: 10px 10px;
++    cursor: pointer;
++    transition: all 0.5s;
++}
++
++input, textarea {
++    width: 100%;
++    border-radius: 8px;
++    border: 1px solid #ccc;
++    padding: 10px 10px;
++    font-size: 16px;
++    resize: none;
++}
++
++#input-info {
++    display: flex;
++    flex-direction: column;
++    margin-bottom: 10px;
++    gap: 10px;
++}
++
++.modal-container {
++    display: none;
++    min-height: 100vh;
++    width: 100%;
++    top: 0;
++    left: 0;
++    right: 0;
++    bottom: 0;
++    backdrop-filter: blur(2px);
++    background: rgba(0, 0, 0, 0.3);
++    position: fixed;
++    justify-content: center;
++    align-items: center;
++    z-index: 1;
++}
++
++.modal {
++    max-width: 500px;
++    width: 100%;
++    background: white;
++    padding: 20px;
++    border: 1px solid #ccc;
++    border-radius: 24px;
++    align-content: center;
++    gap: 10px;
++    align-items: center;
++}
++
++#btn-modal {
++    display: flex;
++    flex-wrap: wrap;
++    justify-content: center;
++    gap: 10px;
++}
++
++#btn-modal button {
++    flex-grow: 1
++}
+\ No newline at end of file
+diff --git a/tablero.html b/tablero.html
+new file mode 100644
+index 0000000..6157e4a
+--- /dev/null
++++ b/tablero.html
+@@ -0,0 +1,70 @@
++<!DOCTYPE html>
++<html>
++    <head>
++        <title>Tablero</title>
++        <link rel="stylesheet" href="cards/cards.css">
++        <meta name="viewport" content="width=device-width, initial-scale=1.0">
++        <meta http-equiv="X-UA-Compatible" content="ie=edge">
++        <meta charset="UTF-8">
++    </head>
++    <body>
++
++        <div class="container">
++            
++            <div class="card mb-16">
++
++                <div class="line pending"></div>
++                <div class="card-header">
++                    <h1>Maquetación de Header</h1>
++                </div>
++                <div class="card-body">
++                    <p>
++                        Definir estructura flexible para
++                        navegación principal.                    
++                    </p>
++                </div>
++                <div class="card-footer">
++                    <button class="btn-task primary">Avanzar</button>
++                </div>
++            </div>
++
++            <div class="card mb-16">
++
++                <div class="line progress"></div>
++                <div class="card-header">
++                    <h1>Maquetación de Header</h1>
++                </div>
++                <div class="card-body">
++                    <p>
++                        Definir estructura flexible para
++                        navegación principal.                    
++                    </p>
++                </div>
++                <div class="card-footer">
++                    <button class="btn-task return">Regresar</button>
++                    <button class="btn-task success">Finalizar</button>
++                </div>
++            </div>
++            
++            <div class="card mb-16">
++
++                <div class="line done"></div>
++                <div class="card-header">
++                    <h1>Maquetación de Header</h1>
++                </div>
++                <div class="card-body">
++                    <p>
++                        Definir estructura flexible para
++                        navegación principal.                    
++                    </p>
++                </div>
++                <div class="card-footer">
++                    <!--<button class="btn-task success">Exitoso</button>-->
++                </div>
++            </div>            
++
++        </div>
++
++        
++    </body>
++</html>
+\ No newline at end of file
+-- 
+2.43.0
+
